@@ -37,7 +37,7 @@ static GLuint load_shaders(const char* vertex_file_path, const char* fragment_fi
 	int InfoLogLength;
 
 	// Компилируем Вершинный шейдер
-	printf("Компиляция шейдера: %sn", vertex_file_path);
+	printf("Компиляция шейдера: %s\n", vertex_file_path);
 	char const* VertexSourcePointer = VertexShaderCode.c_str();
 	glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
 	glCompileShader(VertexShaderID);
@@ -52,7 +52,7 @@ static GLuint load_shaders(const char* vertex_file_path, const char* fragment_fi
 	}
 
 	// Компилируем Фрагментный шейдер
-	printf("Компиляция шейдера: %sn", fragment_file_path);
+	printf("Компиляция шейдера: %s\n", fragment_file_path);
 	char const* FragmentSourcePointer = FragmentShaderCode.c_str();
 	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
 	glCompileShader(FragmentShaderID);
@@ -67,7 +67,7 @@ static GLuint load_shaders(const char* vertex_file_path, const char* fragment_fi
 	}
 
 	// Создаем шейдерную программу и привязываем шейдеры к ней
-	fprintf(stdout, "Создаем шейдерную программу и привязываем шейдеры к нейn");
+	fprintf(stdout, "Создаем шейдерную программу и привязываем шейдеры к ней\n");
 	GLuint ProgramID = glCreateProgram();
 	glAttachShader(ProgramID, VertexShaderID);
 	glAttachShader(ProgramID, FragmentShaderID);
