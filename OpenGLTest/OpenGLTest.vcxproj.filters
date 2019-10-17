@@ -24,11 +24,16 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="shaders.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="test.bmp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
   </ItemGroup>
 </Project>

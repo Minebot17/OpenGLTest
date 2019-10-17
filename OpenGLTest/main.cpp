@@ -9,7 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <GL/freeglut.h>
 #include <windows.h>
-#include "shaders.cpp"
+#include "utils.cpp"
 #include <thread>
 #include <chrono>
 #include <clocale>
@@ -91,44 +91,43 @@ int main() {
 		1.0f,-1.0f, 1.0f
 	};
 
-	// Один цвет для каждой вершины
-	static const GLfloat g_color_buffer_data[] = {
-		0.583f,  0.771f,  0.014f,
-		0.609f,  0.115f,  0.436f,
-		0.327f,  0.483f,  0.844f,
-		0.822f,  0.569f,  0.201f,
-		0.435f,  0.602f,  0.223f,
-		0.310f,  0.747f,  0.185f,
-		0.597f,  0.770f,  0.761f,
-		0.559f,  0.436f,  0.730f,
-		0.359f,  0.583f,  0.152f,
-		0.483f,  0.596f,  0.789f,
-		0.559f,  0.861f,  0.639f,
-		0.195f,  0.548f,  0.859f,
-		0.014f,  0.184f,  0.576f,
-		0.771f,  0.328f,  0.970f,
-		0.406f,  0.615f,  0.116f,
-		0.676f,  0.977f,  0.133f,
-		0.971f,  0.572f,  0.833f,
-		0.140f,  0.616f,  0.489f,
-		0.997f,  0.513f,  0.064f,
-		0.945f,  0.719f,  0.592f,
-		0.543f,  0.021f,  0.978f,
-		0.279f,  0.317f,  0.505f,
-		0.167f,  0.620f,  0.077f,
-		0.347f,  0.857f,  0.137f,
-		0.055f,  0.953f,  0.042f,
-		0.714f,  0.505f,  0.345f,
-		0.783f,  0.290f,  0.734f,
-		0.722f,  0.645f,  0.174f,
-		0.302f,  0.455f,  0.848f,
-		0.225f,  0.587f,  0.040f,
-		0.517f,  0.713f,  0.338f,
-		0.053f,  0.959f,  0.120f,
-		0.393f,  0.621f,  0.362f,
-		0.673f,  0.211f,  0.457f,
-		0.820f,  0.883f,  0.371f,
-		0.982f,  0.099f,  0.879f
+	static const GLfloat g_uv_buffer_data[] = {
+		0.000059f, 1.0f - 0.000004f,
+		0.000103f, 1.0f - 0.336048f,
+		0.335973f, 1.0f - 0.335903f,
+		1.000023f, 1.0f - 0.000013f,
+		0.667979f, 1.0f - 0.335851f,
+		0.999958f, 1.0f - 0.336064f,
+		0.667979f, 1.0f - 0.335851f,
+		0.336024f, 1.0f - 0.671877f,
+		0.667969f, 1.0f - 0.671889f,
+		1.000023f, 1.0f - 0.000013f,
+		0.668104f, 1.0f - 0.000013f,
+		0.667979f, 1.0f - 0.335851f,
+		0.000059f, 1.0f - 0.000004f,
+		0.335973f, 1.0f - 0.335903f,
+		0.336098f, 1.0f - 0.000071f,
+		0.667979f, 1.0f - 0.335851f,
+		0.335973f, 1.0f - 0.335903f,
+		0.336024f, 1.0f - 0.671877f,
+		1.000004f, 1.0f - 0.671847f,
+		0.999958f, 1.0f - 0.336064f,
+		0.667979f, 1.0f - 0.335851f,
+		0.668104f, 1.0f - 0.000013f,
+		0.335973f, 1.0f - 0.335903f,
+		0.667979f, 1.0f - 0.335851f,
+		0.335973f, 1.0f - 0.335903f,
+		0.668104f, 1.0f - 0.000013f,
+		0.336098f, 1.0f - 0.000071f,
+		0.000103f, 1.0f - 0.336048f,
+		0.000004f, 1.0f - 0.671870f,
+		0.336024f, 1.0f - 0.671877f,
+		0.000103f, 1.0f - 0.336048f,
+		0.336024f, 1.0f - 0.671877f,
+		0.335973f, 1.0f - 0.335903f,
+		0.667969f, 1.0f - 0.671889f,
+		1.000004f, 1.0f - 0.671847f,
+		0.667979f, 1.0f - 0.335851f
 	};
 
 	// Это будет идентификатором нашего буфера вершин
@@ -143,32 +142,16 @@ int main() {
 	// Передадим информацию о вершинах в OpenGL
 	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 
-	GLuint colorbuffer;
-	glGenBuffers(1, &colorbuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_color_buffer_data), g_color_buffer_data, GL_STATIC_DRAW);
+	GLuint uv_buffer;
+	glGenBuffers(1, &uv_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, uv_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
 
 	// Включим режим отслеживания нажатия клавиш, для проверки ниже
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
 	// Создать и откомпилировать нашу шейдерную программу
 	GLuint program_id = load_shaders("vertex_standart.glsl", "fragment_standart.glsl");
-
-	// Проекционная матрица : 45&deg; поле обзора, 4:3 соотношение сторон, диапазон : 0.1 юнит <-> 100 юнитов
-	mat4 projection = glm::perspective(radians(90.0f), 4.0f / 3.0f, 0.1f, 100.0f);
-
-	// Или, для ортокамеры
-	mat4 view = glm::lookAt(
-		vec3(4, 3, -3), // Камера находится в мировых координатах (4,3,3)
-		vec3(0, 0, 0), // И направлена в начало координат
-		vec3(0, 1, 0)  // "Голова" находится сверху
-	);
-
-	// Матрица модели : единичная матрица (Модель находится в начале координат)
-	mat4 model = mat4(1.0f);  // Индивидуально для каждой модели
-
-	// Итоговая матрица ModelViewProjection, которая является результатом перемножения наших трех матриц
-	mat4 mvp = projection * view * model; // Помните, что умножение матрицы производиться в обратном порядке
 
 	// Получить хэндл переменной в шейдере
 	GLuint matrix_id = glGetUniformLocation(program_id, "mvp");
@@ -177,11 +160,67 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 	// Фрагмент будет выводиться только в том, случае, если он находится ближе к камере, чем предыдущий
 	glDepthFunc(GL_LESS);
+
+	GLuint texture_id = load_bmp("test.bmp");
+
+	int w, h;
+	glfwGetWindowSize(window, &w, &h);
+	glfwSetCursorPos(window, float(w) / 2.0f, float(h) / 2.0f);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	
+	float delta_time = 0;
+	float last_time = 0;
+	vec3 position = vec3(-5, 0, 0);
+	float x_angle = 0;
+	float y_angle = 0;
+	const float mouse_speed = 0.04f;
+	const float fly_speed = 1.0f;
 	
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
 
 		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		delta_time = float(glfwGetTime()) - last_time;
+		last_time = float(glfwGetTime());
+
+		double dx, dy;
+		glfwGetWindowSize(window, &w, &h);
+		glfwGetCursorPos(window, &dx, &dy);
+		glfwSetCursorPos(window, float(w)/2.0f, float(h)/2.0f);
+		dx -= float(w) / 2.0f;
+		dy -= float(h) / 2.0f;
+		x_angle += float(-dx) * delta_time * mouse_speed;
+		y_angle += float(dy) * delta_time * mouse_speed;
+
+		vec3 right = vec4(cosf(x_angle - pi<float>()/2.0f), 0, sinf(x_angle - pi<float>() / 2.0f), 1);
+		vec3 forward = glm::rotate(mat4(1.0f), y_angle, vec3(0, 0, 1)) * vec4(1, 0, 0, 0) * glm::rotate(mat4(1.0f), x_angle, vec3(0, 1, 0));
+		vec3 up = glm::cross(right, forward);
+		
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			position += fly_speed * forward * delta_time;
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			position += fly_speed * -forward * delta_time;
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			position += fly_speed * -right * delta_time;
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			position += fly_speed * right * delta_time;
+
+		// Проекционная матрица : 45&deg; поле обзора, 4:3 соотношение сторон, диапазон : 0.1 юнит <-> 100 юнитов
+		mat4 projection = glm::perspective(radians(75.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+
+		// Или, для ортокамеры
+		mat4 view = glm::lookAt(
+			position, // Камера находится в мировых координатах
+			position + forward, // И направлена в начало координат
+			up  // "Голова" находится сверху
+		);
+
+		// Матрица модели : единичная матрица (Модель находится в начале координат)
+		mat4 model = mat4(1.0f);  // Индивидуально для каждой модели
+
+		// Итоговая матрица ModelViewProjection, которая является результатом перемножения наших трех матриц
+		mat4 mvp = projection * view * model; // Помните, что умножение матрицы производиться в обратном порядке
 
 		// Передать наши трансформации в текущий шейдер
 		// Это делается в основном цикле, поскольку каждая модель будет иметь другую MVP-матрицу (как минимум часть M)
@@ -202,10 +241,10 @@ int main() {
 
 		// Второй буфер атрибутов - цвета
 		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, uv_buffer);
 		glVertexAttribPointer(
 			1,                                // Атрибут. Здесь необязательно указывать 1, но главное, чтобы это значение совпадало с layout в шейдере..
-			3,                                // Размер
+			2,                                // Размер
 			GL_FLOAT,                         // Тип
 			GL_FALSE,                         // Нормализован?
 			0,                                // Шаг
