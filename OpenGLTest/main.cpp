@@ -52,100 +52,20 @@ int main() {
 	glGenVertexArrays(1, &vertex_array_id);
 	glBindVertexArray(vertex_array_id);
 
-	static const GLfloat g_vertex_buffer_data[] = {
-		-1.0f,-1.0f,-1.0f, // Треугольник 1 : начало
-		-1.0f,-1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f, // Треугольник 1 : конец
-		1.0f, 1.0f,-1.0f, // Треугольник 2 : начало
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f,-1.0f, // Треугольник 2 : конец
-		1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f,-1.0f,
-		1.0f,-1.0f,-1.0f,
-		1.0f, 1.0f,-1.0f,
-		1.0f,-1.0f,-1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f,-1.0f,
-		1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f, 1.0f,
-		-1.0f,-1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
-		-1.0f,-1.0f, 1.0f,
-		1.0f,-1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,
-		1.0f,-1.0f,-1.0f,
-		1.0f, 1.0f,-1.0f,
-		1.0f,-1.0f,-1.0f,
-		1.0f, 1.0f, 1.0f,
-		1.0f,-1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f,-1.0f,
-		-1.0f, 1.0f,-1.0f,
-		1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f,-1.0f,
-		-1.0f, 1.0f, 1.0f,
-		1.0f, 1.0f, 1.0f,
-		-1.0f, 1.0f, 1.0f,
-		1.0f,-1.0f, 1.0f
-	};
+	std::vector< glm::vec3 > vertices;
+	std::vector< glm::vec2 > uvs;
+	std::vector< glm::vec3 > normals;
+	bool res = load_obj("C:\\Users\\serpi\\Documents\\CppProjects\\OpenGLTest\\OpenGLTest\\Intergalactic_Spaceship.obj", vertices, uvs, normals);
 
-	static const GLfloat g_uv_buffer_data[] = {
-		0.000059f, 1.0f - 0.000004f,
-		0.000103f, 1.0f - 0.336048f,
-		0.335973f, 1.0f - 0.335903f,
-		1.000023f, 1.0f - 0.000013f,
-		0.667979f, 1.0f - 0.335851f,
-		0.999958f, 1.0f - 0.336064f,
-		0.667979f, 1.0f - 0.335851f,
-		0.336024f, 1.0f - 0.671877f,
-		0.667969f, 1.0f - 0.671889f,
-		1.000023f, 1.0f - 0.000013f,
-		0.668104f, 1.0f - 0.000013f,
-		0.667979f, 1.0f - 0.335851f,
-		0.000059f, 1.0f - 0.000004f,
-		0.335973f, 1.0f - 0.335903f,
-		0.336098f, 1.0f - 0.000071f,
-		0.667979f, 1.0f - 0.335851f,
-		0.335973f, 1.0f - 0.335903f,
-		0.336024f, 1.0f - 0.671877f,
-		1.000004f, 1.0f - 0.671847f,
-		0.999958f, 1.0f - 0.336064f,
-		0.667979f, 1.0f - 0.335851f,
-		0.668104f, 1.0f - 0.000013f,
-		0.335973f, 1.0f - 0.335903f,
-		0.667979f, 1.0f - 0.335851f,
-		0.335973f, 1.0f - 0.335903f,
-		0.668104f, 1.0f - 0.000013f,
-		0.336098f, 1.0f - 0.000071f,
-		0.000103f, 1.0f - 0.336048f,
-		0.000004f, 1.0f - 0.671870f,
-		0.336024f, 1.0f - 0.671877f,
-		0.000103f, 1.0f - 0.336048f,
-		0.336024f, 1.0f - 0.671877f,
-		0.335973f, 1.0f - 0.335903f,
-		0.667969f, 1.0f - 0.671889f,
-		1.000004f, 1.0f - 0.671847f,
-		0.667979f, 1.0f - 0.335851f
-	};
-
-	// Это будет идентификатором нашего буфера вершин
 	GLuint vertex_buffer;
-
-	// Создадим 1 буфер и поместим в переменную vertexbuffer его идентификатор
 	glGenBuffers(1, &vertex_buffer);
-
-	// Сделаем только что созданный буфер текущим
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-
-	// Передадим информацию о вершинах в OpenGL
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
 
 	GLuint uv_buffer;
 	glGenBuffers(1, &uv_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, uv_buffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(g_uv_buffer_data), g_uv_buffer_data, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), &uvs[0], GL_STATIC_DRAW);
 
 	// Включим режим отслеживания нажатия клавиш, для проверки ниже
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
@@ -161,7 +81,7 @@ int main() {
 	// Фрагмент будет выводиться только в том, случае, если он находится ближе к камере, чем предыдущий
 	glDepthFunc(GL_LESS);
 
-	GLuint texture_id = load_bmp("test.bmp");
+	GLuint texture_id = load_bmp("space_ship.bmp");
 
 	int w, h;
 	glfwGetWindowSize(window, &w, &h);
@@ -255,7 +175,7 @@ int main() {
 		glUseProgram(program_id);
 		
 		// Вывести треугольник
-		glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 индексов начинающихся с 0. -> 12 треугольников -> 6 граней.
+		glDrawArrays(GL_TRIANGLES, 0, vertices.size()); // 12*3 индексов начинающихся с 0. -> 12 треугольников -> 6 граней.
 
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);

@@ -2,9 +2,15 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <istream>
 #include <sstream>
 #include <GL/glew.h>
 #include <GL/GL.h>
+#include <glm/glm.hpp>
+#include <vector>
+#include <iostream>
+using std::vector;
+using namespace glm;
 
 static GLuint load_shaders(const char* vertex_file_path, const char* fragment_file_path) {
 
@@ -151,4 +157,57 @@ static GLuint load_bmp(const char* path) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	return textureID;
+}
+
+static bool load_obj(const char* path, vector<vec3>& vertices, vector<vec2>& uvs, vector<vec3>& normals) {
+	vector<vec3> ns_vertices;
+	vector<vec2> ns_uvs;
+	vector<vec3> ns_normals;
+
+	FILE* file = fopen(path, "r");
+	if (file == nullptr) {
+		printf("Impossible to open the file !\n");
+		return false;
+	}
+	
+	while (true) {
+		char buffer[256];
+		const int result = fscanf(file, "%s", buffer);
+		if (result == EOF)
+			break;
+
+		if (strcmp(buffer, "v") == 0) {
+			vec3 vertex;
+			fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
+			ns_vertices.push_back(vertex);
+		}
+		else if (strcmp(buffer, "vt") == 0) {
+			vec2 uv;
+			fscanf(file, "%f %f\n", &uv.x, &uv.y);
+			ns_uvs.push_back(uv);
+		}
+		else if (strcmp(buffer, "vn") == 0) {
+			vec3 normal;
+			fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z);
+			ns_normals.push_back(normal);
+		}
+		else if (strcmp(buffer, "f") == 0) {
+			unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
+			int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]);
+			if (matches != 9) {
+				printf("File can't be read by our simple parser : ( Try exporting with other options\n");
+				return false;
+			}
+			vertices.push_back(ns_vertices[vertexIndex[0] - 1]);
+			vertices.push_back(ns_vertices[vertexIndex[1] - 1]);
+			vertices.push_back(ns_vertices[vertexIndex[2] - 1]);
+			uvs.push_back(ns_uvs[uvIndex[0] - 1]);
+			uvs.push_back(ns_uvs[uvIndex[1] - 1]);
+			uvs.push_back(ns_uvs[uvIndex[2] - 1]);
+			normals.push_back(ns_normals[normalIndex[0] - 1]);
+			normals.push_back(ns_normals[normalIndex[1] - 1]);
+			normals.push_back(ns_normals[normalIndex[2] - 1]);
+		}
+	}
+	return true;
 }
