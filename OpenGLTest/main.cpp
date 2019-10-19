@@ -55,8 +55,11 @@ int main() {
 	std::vector< glm::vec3 > vertices;
 	std::vector< glm::vec2 > uvs;
 	std::vector< glm::vec3 > normals;
-	bool res = load_obj("C:\\Users\\serpi\\Documents\\CppProjects\\OpenGLTest\\OpenGLTest\\Intergalactic_Spaceship.obj", vertices, uvs, normals);
-
+	std::vector<vec3> tangents;
+	std::vector<vec3> bitangents;
+	load_obj("C:\\Users\\serpi\\Documents\\CppProjects\\OpenGLTest\\OpenGLTest\\Intergalactic_Spaceship.obj", vertices, uvs, normals);
+	compute_tangent_basis(vertices, uvs, normals, tangents, bitangents);
+	
 	GLuint vertex_buffer;
 	glGenBuffers(1, &vertex_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
@@ -72,6 +75,16 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, normal_buffer);
 	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), &normals[0], GL_STATIC_DRAW);
 
+	GLuint tangent_buffer;
+	glGenBuffers(1, &tangent_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, tangent_buffer);
+	glBufferData(GL_ARRAY_BUFFER, tangents.size() * sizeof(glm::vec3), &tangents[0], GL_STATIC_DRAW);
+
+	GLuint bitangent_buffer;
+	glGenBuffers(1, &bitangent_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, bitangent_buffer);
+	glBufferData(GL_ARRAY_BUFFER, bitangents.size() * sizeof(glm::vec3), &bitangents[0], GL_STATIC_DRAW);
+
 	// ¬ключим режим отслеживани€ нажати€ клавиш, дл€ проверки ниже
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
@@ -82,6 +95,7 @@ int main() {
 	GLuint matrix_id = glGetUniformLocation(program_id, "mvp");
 	GLuint model_matrix_id = glGetUniformLocation(program_id, "model");
 	GLuint view_matrix_id = glGetUniformLocation(program_id, "view");
+	GLuint mv3x3_id = glGetUniformLocation(program_id, "mv3x3");
 	GLuint light_color_id = glGetUniformLocation(program_id, "lightColor"); 
 	GLuint light_power_id = glGetUniformLocation(program_id, "lightPower");
 	GLuint light_position_worldspace_id = glGetUniformLocation(program_id, "lightPosition_worldspace");
@@ -92,6 +106,9 @@ int main() {
 	glDepthFunc(GL_LESS);
 
 	GLuint texture_id = load_bmp("space_ship.bmp");
+	GLuint normal_id = load_bmp("space_ship_normals.bmp");
+	GLuint texture_location = glGetUniformLocation(program_id, "textureSampler");
+	GLuint normal_location = glGetUniformLocation(program_id, "normalSampler");
 
 	int w, h;
 	glfwGetWindowSize(window, &w, &h);
@@ -161,12 +178,22 @@ int main() {
 		vec3 light_color = vec3(1.0f, 1.0f, 1.0f);
 		vec3 light_position_worldspace = vec3(sin(glfwGetTime())*2.0f, -2.0f, cos(glfwGetTime())*2.0f);
 		float light_power = 3.0f;
+		mat3 mv3x3 = mat3(model * view);
 		glUniformMatrix4fv(matrix_id, 1, GL_FALSE, &mvp[0][0]);
 		glUniformMatrix4fv(model_matrix_id, 1, GL_FALSE, &model[0][0]);
 		glUniformMatrix4fv(view_matrix_id, 1, GL_FALSE, &view[0][0]);
+		glUniformMatrix3fv(mv3x3_id, 1, GL_FALSE, &mv3x3[0][0]);
 		glUniform3f(light_position_worldspace_id, light_position_worldspace.x, light_position_worldspace.y, light_position_worldspace.z);
 		glUniform3f(light_color_id, light_color.x, light_color.y, light_color.z);
 		glUniform1f(light_power_id, light_power);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture_id);
+		glUniform1i(texture_location, 0);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, normal_id);
+		glUniform1i(normal_location, 1);
 		
 		// ”казываем, что первым буфером атрибутов будут вершины
 		glEnableVertexAttribArray(0);
@@ -202,6 +229,28 @@ int main() {
 			GL_FALSE,
 			0,
 			(void*) 0
+		);
+
+		glEnableVertexAttribArray(3);
+		glBindBuffer(GL_ARRAY_BUFFER, tangent_buffer);
+		glVertexAttribPointer(
+			3,
+			3,
+			GL_FLOAT,
+			GL_FALSE,
+			0,
+			(void*)0
+		);
+
+		glEnableVertexAttribArray(4);
+		glBindBuffer(GL_ARRAY_BUFFER, bitangent_buffer);
+		glVertexAttribPointer(
+			4,
+			3,
+			GL_FLOAT,
+			GL_FALSE,
+			0,
+			(void*)0
 		);
 
 		// ”станавливаем наш шейдер текущим

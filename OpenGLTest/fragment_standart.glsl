@@ -4,16 +4,20 @@ in vec2 uv;
 in vec3 normal_cameraspace;
 in vec3 lightDirection_cameraspace;
 in vec3 eyeDirection_cameraspace;
+in vec3 lightDirection_tangentspace;
+in vec3 eyeDirection_tangentspace;
+in mat3 tbn;
 
 out vec3 color;
 uniform sampler2D textureSampler;
+uniform sampler2D normalSampler;
 uniform vec3 lightColor;
 uniform float lightPower;
 
 void main(){
-	vec3 n = normalize(normal_cameraspace);
-	vec3 l = normalize(lightDirection_cameraspace);
-	vec3 e = normalize(eyeDirection_cameraspace);
+	vec3 n = normalize(texture(normalSampler, uv).rgb*2.0 - 1.0);
+	vec3 l = normalize(lightDirection_tangentspace);
+	vec3 e = normalize(eyeDirection_tangentspace);
 	vec3 r = reflect(-l, n);
 
 	float cosAlpha = clamp(dot(e, r), 0, 1);
