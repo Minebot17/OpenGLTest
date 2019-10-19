@@ -11,6 +11,7 @@ in mat3 tbn;
 out vec3 color;
 uniform sampler2D textureSampler;
 uniform sampler2D normalSampler;
+uniform sampler2D specularSampler;
 uniform vec3 lightColor;
 uniform float lightPower;
 
@@ -25,7 +26,8 @@ void main(){
 	float dist = clamp(1.0/(length(lightDirection_cameraspace) * length(lightDirection_cameraspace)), 0, 1);
 
 	vec3 materialColor = texture(textureSampler, uv).rgb;
-	color = vec3(0.07, 0.07, 0.07) * materialColor + // ambient
+	vec3 specularColor = texture(specularSampler, uv).rgb;
+	color = vec3(0.05, 0.05, 0.05) * materialColor + // ambient
 			materialColor * lightColor * lightPower * cosTheta * dist + // diffuse
-			materialColor * lightColor * lightPower * pow(cosAlpha, 5) * dist; // specular
+			specularColor * lightColor * lightPower * pow(cosAlpha, 5) * dist; // specular
 }

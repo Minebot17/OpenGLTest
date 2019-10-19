@@ -103,12 +103,14 @@ int main() {
 	// ¬ключить тест глубины
 	glEnable(GL_DEPTH_TEST);
 	// ‘рагмент будет выводитьс€ только в том, случае, если он находитс€ ближе к камере, чем предыдущий
-	glDepthFunc(GL_LESS);
+	glDepthFunc(GL_LESS); 
 
 	GLuint texture_id = load_bmp("space_ship.bmp");
 	GLuint normal_id = load_bmp("space_ship_normals.bmp");
+	GLuint specular_id = load_bmp("space_ship_specular.bmp");
 	GLuint texture_location = glGetUniformLocation(program_id, "textureSampler");
 	GLuint normal_location = glGetUniformLocation(program_id, "normalSampler");
+	GLuint specular_location = glGetUniformLocation(program_id, "specularSampler");
 
 	int w, h;
 	glfwGetWindowSize(window, &w, &h);
@@ -194,6 +196,10 @@ int main() {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, normal_id);
 		glUniform1i(normal_location, 1);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, specular_id);
+		glUniform1i(specular_location, 2);
 		
 		// ”казываем, что первым буфером атрибутов будут вершины
 		glEnableVertexAttribArray(0);

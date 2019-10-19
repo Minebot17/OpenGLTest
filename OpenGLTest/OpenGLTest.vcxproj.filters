@@ -41,5 +41,8 @@
     <Image Include="space_ship_normals.bmp">
       <Filter>Исходные файлы</Filter>
     </Image>
+    <Image Include="space_ship_specular.bmp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
   </ItemGroup>
 </Project>
