@@ -135,7 +135,11 @@ int main() {
 			position += fly_speed * -right * delta_time;
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 			position += fly_speed * right * delta_time;
-
+		if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
+			position += fly_speed * -up * delta_time;
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+			position += fly_speed * up * delta_time;
+		
 		// Проекционная матрица : 45&deg; поле обзора, 4:3 соотношение сторон, диапазон : 0.1 юнит <-> 100 юнитов
 		mat4 projection = glm::perspective(radians(75.0f), 4.0f / 3.0f, 0.1f, 100.0f);
 
@@ -155,7 +159,7 @@ int main() {
 		// Передать наши трансформации в текущий шейдер
 		// Это делается в основном цикле, поскольку каждая модель будет иметь другую MVP-матрицу (как минимум часть M)
 		vec3 light_color = vec3(1.0f, 1.0f, 1.0f);
-		vec3 light_position_worldspace = vec3(4.0f, 2.0f, 0.0f);
+		vec3 light_position_worldspace = vec3(sin(glfwGetTime())*2.0f, -2.0f, cos(glfwGetTime())*2.0f);
 		float light_power = 3.0f;
 		glUniformMatrix4fv(matrix_id, 1, GL_FALSE, &mvp[0][0]);
 		glUniformMatrix4fv(model_matrix_id, 1, GL_FALSE, &model[0][0]);

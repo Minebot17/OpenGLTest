@@ -140,14 +140,8 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="space_ship.bmp" />
+    <Image Include="space_ship_normals.bmp" />
     <Image Include="test.bmp" />
-    <Image Include="textures\Intergalactic Spaceship Ao_Blender.jpg" />
-    <Image Include="textures\Intergalactic_Spaceship_color_4.jpg" />
-    <Image Include="textures\Intergalactic Spaceship_curvature.jpg" />
-    <Image Include="textures\Intergalactic Spaceship_emi.jpg" />
-    <Image Include="textures\Intergalactic Spaceship_metalness.jpg" />
-    <Image Include="textures\Intergalactic Spaceship_nmap_2_Tris.jpg" />
-    <Image Include="textures\Intergalactic Spaceship_rough.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

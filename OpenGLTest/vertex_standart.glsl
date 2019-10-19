@@ -12,17 +12,15 @@ out vec3 fragmentColor;
 out vec2 uv;
 out vec3 normal_cameraspace;
 out vec3 lightDirection_cameraspace;
+out vec3 eyeDirection_cameraspace;
 
 void main(){
 	uv = vertexUV;
 	gl_Position = mvp * vec4(vertexPosition_modelspace, 1);
 
-	// Position of the vertex, in worldspace : M * position
-	vec3 position_worldspace = (model * vec4(vertexPosition_modelspace,1)).xyz;
-
 	// Vector that goes from the vertex to the camera, in camera space.
 	vec3 vertexPosition_cameraspace = (view * model * vec4(vertexPosition_modelspace,1)).xyz;
-	vec3 eyeDirection_cameraspace = -vertexPosition_cameraspace;
+	eyeDirection_cameraspace = -vertexPosition_cameraspace;
 
 	// Vector that goes from the vertex to the light, in camera space. M is ommited because it's identity.
 	vec3 lightPosition_cameraspace = (view * vec4(lightPosition_worldspace,1)).xyz;
