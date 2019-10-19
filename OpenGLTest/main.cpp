@@ -67,6 +67,11 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, uv_buffer);
 	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(vec2), &uvs[0], GL_STATIC_DRAW);
 
+	GLuint normal_buffer;
+	glGenBuffers(1, &normal_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normal_buffer);
+	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(vec3), &normals[0], GL_STATIC_DRAW);
+
 	// Включим режим отслеживания нажатия клавиш, для проверки ниже
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
@@ -75,6 +80,11 @@ int main() {
 
 	// Получить хэндл переменной в шейдере
 	GLuint matrix_id = glGetUniformLocation(program_id, "mvp");
+	GLuint model_matrix_id = glGetUniformLocation(program_id, "model");
+	GLuint view_matrix_id = glGetUniformLocation(program_id, "view");
+	GLuint light_color_id = glGetUniformLocation(program_id, "lightColor"); 
+	GLuint light_power_id = glGetUniformLocation(program_id, "lightPower");
+	GLuint light_position_worldspace_id = glGetUniformLocation(program_id, "lightPosition_worldspace");
 
 	// Включить тест глубины
 	glEnable(GL_DEPTH_TEST);
@@ -94,7 +104,7 @@ int main() {
 	float x_angle = 0;
 	float y_angle = 0;
 	const float mouse_speed = 0.04f;
-	const float fly_speed = 1.0f;
+	const float fly_speed = 4.0f;
 	
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
 
@@ -144,7 +154,15 @@ int main() {
 
 		// Передать наши трансформации в текущий шейдер
 		// Это делается в основном цикле, поскольку каждая модель будет иметь другую MVP-матрицу (как минимум часть M)
+		vec3 light_color = vec3(1.0f, 1.0f, 1.0f);
+		vec3 light_position_worldspace = vec3(4.0f, 2.0f, 0.0f);
+		float light_power = 3.0f;
 		glUniformMatrix4fv(matrix_id, 1, GL_FALSE, &mvp[0][0]);
+		glUniformMatrix4fv(model_matrix_id, 1, GL_FALSE, &model[0][0]);
+		glUniformMatrix4fv(view_matrix_id, 1, GL_FALSE, &view[0][0]);
+		glUniform3f(light_position_worldspace_id, light_position_worldspace.x, light_position_worldspace.y, light_position_worldspace.z);
+		glUniform3f(light_color_id, light_color.x, light_color.y, light_color.z);
+		glUniform1f(light_power_id, light_power);
 		
 		// Указываем, что первым буфером атрибутов будут вершины
 		glEnableVertexAttribArray(0);
@@ -171,6 +189,17 @@ int main() {
 			(void*)0                          // Смещение
 		);
 
+		glEnableVertexAttribArray(2);
+		glBindBuffer(GL_ARRAY_BUFFER, normal_buffer);
+		glVertexAttribPointer(
+			2,
+			3,
+			GL_FLOAT,
+			GL_FALSE,
+			0,
+			(void*) 0
+		);
+
 		// Устанавливаем наш шейдер текущим
 		glUseProgram(program_id);
 		
@@ -179,6 +208,7 @@ int main() {
 
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
 
 		// Сбрасываем буферы
 		glfwSwapBuffers(window);
