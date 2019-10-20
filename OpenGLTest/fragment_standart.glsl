@@ -1,4 +1,5 @@
 #version 330 core
+layout(location = 0) out vec3 color;
 in vec3 fragmentColor;
 in vec2 uv;
 in vec3 normal_cameraspace;
@@ -8,7 +9,6 @@ in vec3 lightDirection_tangentspace;
 in vec3 eyeDirection_tangentspace;
 in mat3 tbn;
 
-out vec3 color;
 uniform sampler2D textureSampler;
 uniform sampler2D normalSampler;
 uniform sampler2D specularSampler;

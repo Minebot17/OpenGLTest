@@ -47,6 +47,86 @@ int main() {
 		return -1;
 	}
 
+	int w, h;
+	glfwGetWindowSize(window, &w, &h);
+	glfwSetCursorPos(window, float(w) / 2.0f, float(h) / 2.0f);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+	// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
+	GLuint framebuffer_id = 0;
+	glGenFramebuffers(1, &framebuffer_id);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
+
+	// The texture we're going to render to
+	GLuint rendered_texture;
+	glGenTextures(1, &rendered_texture);
+
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, rendered_texture);
+
+	// Give an empty image to OpenGL ( the last "0" )
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+	// Poor filtering. Needed !
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	// The depth buffer
+	GLuint depth_renderbuffer;
+	glGenRenderbuffers(1, &depth_renderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depth_renderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_renderbuffer);
+
+	// Set "renderedTexture" as our colour attachement #0
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, rendered_texture, 0);
+
+	// Set the list of draw buffers.
+	GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+	// Always check that our framebuffer is ok
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		printf("Framebuffer isn't ok");
+
+	// The fullscreen quad's FBO
+	GLuint quad_vertex_array_id;
+	glGenVertexArrays(1, &quad_vertex_array_id);
+	glBindVertexArray(quad_vertex_array_id);
+
+	static const GLfloat g_quad_vertex_buffer_data[] = {
+		-1.0f, -1.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,
+		-1.0f,  1.0f, 0.0f,
+		-1.0f,  1.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,
+		1.0f,  1.0f, 0.0f,
+	};
+
+	static const GLfloat g_quad_uv_buffer_data[] = {
+		0.0f, 0.0f,
+		1.0f, 0.0f,
+		0.0f, 1.0f,
+		0.0f, 1.0f,
+		1.0f, 0.0f,
+		1.0f, 1.0f
+	};
+	
+	GLuint quad_vertex_buffer;
+	glGenBuffers(1, &quad_vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, quad_vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
+
+	GLuint quad_uv_buffer;
+	glGenBuffers(1, &quad_uv_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, quad_uv_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_uv_buffer_data), g_quad_uv_buffer_data, GL_STATIC_DRAW);
+
+	// Create and compile our GLSL program from the shaders
+	GLuint post_program_id = load_shaders("post_vertex.glsl", "post_fragment.glsl");
+	GLuint rendered_texture_location = glGetUniformLocation(post_program_id, "rendered_texture");
+	GLuint post_time_location = glGetUniformLocation(post_program_id, "time");
+	
 	// Создаем VAO
 	GLuint vertex_array_id;
 	glGenVertexArrays(1, &vertex_array_id);
@@ -100,8 +180,6 @@ int main() {
 	GLuint light_power_id = glGetUniformLocation(program_id, "lightPower");
 	GLuint light_position_worldspace_id = glGetUniformLocation(program_id, "lightPosition_worldspace");
 
-	// Включить тест глубины
-	glEnable(GL_DEPTH_TEST);
 	// Фрагмент будет выводиться только в том, случае, если он находится ближе к камере, чем предыдущий
 	glDepthFunc(GL_LESS); 
 
@@ -111,11 +189,6 @@ int main() {
 	GLuint texture_location = glGetUniformLocation(program_id, "textureSampler");
 	GLuint normal_location = glGetUniformLocation(program_id, "normalSampler");
 	GLuint specular_location = glGetUniformLocation(program_id, "specularSampler");
-
-	int w, h;
-	glfwGetWindowSize(window, &w, &h);
-	glfwSetCursorPos(window, float(w) / 2.0f, float(h) / 2.0f);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	
 	float delta_time = 0;
 	float last_time = 0;
@@ -127,8 +200,17 @@ int main() {
 	
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
 
+		// Render to our framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
+		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+		glBindVertexArray(vertex_array_id);
+
+		// Устанавливаем наш шейдер текущим
+		glUseProgram(program_id);
+
 		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 
 		delta_time = float(glfwGetTime()) - last_time;
 		last_time = float(glfwGetTime());
@@ -258,9 +340,6 @@ int main() {
 			0,
 			(void*)0
 		);
-
-		// Устанавливаем наш шейдер текущим
-		glUseProgram(program_id);
 		
 		// Вывести треугольник
 		glDrawArrays(GL_TRIANGLES, 0, vertices.size()); // 12*3 индексов начинающихся с 0. -> 12 треугольников -> 6 граней.
@@ -268,6 +347,54 @@ int main() {
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
 		glDisableVertexAttribArray(2);
+		glDisableVertexAttribArray(3);
+		glDisableVertexAttribArray(4);
+
+		// Render to the screen
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper right
+		
+		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glBindVertexArray(quad_vertex_array_id);
+		glUseProgram(post_program_id);
+		glDisable(GL_DEPTH_TEST);
+		
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, rendered_texture);
+		glUniform1i(rendered_texture_location, 0);
+
+		glUniform1f(post_time_location, glfwGetTime());
+
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, quad_vertex_buffer);
+		glVertexAttribPointer(
+			0,                  // Атрибут 0. Подробнее об этом будет рассказано в части, посвященной шейдерам.
+			3,                  // Размер
+			GL_FLOAT,           // Тип
+			GL_FALSE,           // Указывает, что значения не нормализованы
+			0,                  // Шаг
+			(void*)0            // Смещение массива в буфере
+		);
+
+
+		// Второй буфер атрибутов - цвета
+		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ARRAY_BUFFER, quad_uv_buffer);
+		glVertexAttribPointer(
+			1,                                // Атрибут. Здесь необязательно указывать 1, но главное, чтобы это значение совпадало с layout в шейдере..
+			2,                                // Размер
+			GL_FLOAT,                         // Тип
+			GL_FALSE,                         // Нормализован?
+			0,                                // Шаг
+			(void*)0                          // Смещение
+		);
+		
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
 
 		// Сбрасываем буферы
 		glfwSwapBuffers(window);
