@@ -9,7 +9,8 @@ uniform mat4 mvp;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat3 mv3x3;
-uniform vec3 lightPosition_worldspace;
+uniform vec3 lightDirection_worldspace;
+uniform mat4 depthBiasMVP;
 
 out vec3 fragmentColor;
 out vec2 uv;
@@ -19,18 +20,17 @@ out vec3 eyeDirection_cameraspace;
 out vec3 lightDirection_tangentspace;
 out vec3 eyeDirection_tangentspace;
 out mat3 tbn;
+out vec4 shadowCoord;
 
 void main(){
 	uv = vertexUV;
 	gl_Position = mvp * vec4(vertexPosition_modelspace, 1);
 
 	// Vector that goes from the vertex to the camera, in camera space.
-	vec3 vertexPosition_cameraspace = (view * model * vec4(vertexPosition_modelspace,1)).xyz;
-	eyeDirection_cameraspace = -vertexPosition_cameraspace;
+	vec3 vertexPosition_cameraspace = (view * model * vec4(vertexPosition_modelspace, 1)).xyz;
+	lightDirection_cameraspace = (view * vec4(lightDirection_worldspace, 0)).xyz;
 
-	// Vector that goes from the vertex to the light, in camera space. M is ommited because it's identity.
-	vec3 lightPosition_cameraspace = (view * vec4(lightPosition_worldspace,1)).xyz;
-	lightDirection_cameraspace = lightPosition_cameraspace + eyeDirection_cameraspace;
+	eyeDirection_cameraspace = -vertexPosition_cameraspace;
 
 	// Normal of the the vertex, in camera space
 	normal_cameraspace = (view * model * vec4(vertexNormal, 0)).xyz; // Only correct if ModelMatrix does not scale the model ! Use its inverse transpose if not
@@ -47,4 +47,5 @@ void main(){
 
 	lightDirection_tangentspace = tbn * lightDirection_cameraspace;
     eyeDirection_tangentspace =  tbn * eyeDirection_cameraspace;
+	shadowCoord = depthBiasMVP * vec4(vertexPosition_modelspace,1);
 }

@@ -52,6 +52,30 @@ int main() {
 	glfwSetCursorPos(window, float(w) / 2.0f, float(h) / 2.0f);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
+	GLuint shadow_framebuffer_id = 0;
+	glGenFramebuffers(1, &shadow_framebuffer_id);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer_id);
+
+	// Depth texture. Slower than a depth buffer, but you can sample it later in your shader
+	GLuint shadow_texture;
+	glGenTextures(1, &shadow_texture);
+	glBindTexture(GL_TEXTURE_2D, shadow_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_texture, 0);
+	glDrawBuffer(GL_NONE); // No color buffer is drawn to.
+
+	// Always check that our framebuffer is ok
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		printf("Framebuffer isn't ok");
+
+	GLuint shadow_map_program_id = load_shaders("shadow_map_vertex.glsl", "shadow_map_fragment.glsl");
+	GLuint shadow_mvp_location = glGetUniformLocation(shadow_map_program_id, "shadow_mvp");
+
 	// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
 	GLuint framebuffer_id = 0;
 	glGenFramebuffers(1, &framebuffer_id);
@@ -126,6 +150,7 @@ int main() {
 	GLuint post_program_id = load_shaders("post_vertex.glsl", "post_fragment.glsl");
 	GLuint rendered_texture_location = glGetUniformLocation(post_program_id, "rendered_texture");
 	GLuint post_time_location = glGetUniformLocation(post_program_id, "time");
+	GLuint post_shadow_texture_location = glGetUniformLocation(post_program_id, "shadow_texture");
 	
 	// Создаем VAO
 	GLuint vertex_array_id;
@@ -178,7 +203,9 @@ int main() {
 	GLuint mv3x3_id = glGetUniformLocation(program_id, "mv3x3");
 	GLuint light_color_id = glGetUniformLocation(program_id, "lightColor"); 
 	GLuint light_power_id = glGetUniformLocation(program_id, "lightPower");
-	GLuint light_position_worldspace_id = glGetUniformLocation(program_id, "lightPosition_worldspace");
+	GLuint light_position_worldspace_id = glGetUniformLocation(program_id, "lightDirection_worldspace");
+	GLuint depth_bias_mvp_id = glGetUniformLocation(program_id, "depthBiasMVP");
+	GLuint time_id = glGetUniformLocation(program_id, "time");
 
 	// Фрагмент будет выводиться только в том, случае, если он находится ближе к камере, чем предыдущий
 	glDepthFunc(GL_LESS); 
@@ -189,6 +216,7 @@ int main() {
 	GLuint texture_location = glGetUniformLocation(program_id, "textureSampler");
 	GLuint normal_location = glGetUniformLocation(program_id, "normalSampler");
 	GLuint specular_location = glGetUniformLocation(program_id, "specularSampler");
+	GLuint shadow_location = glGetUniformLocation(program_id, "shadowSampler");
 	
 	float delta_time = 0;
 	float last_time = 0;
@@ -199,18 +227,6 @@ int main() {
 	const float fly_speed = 4.0f;
 	
 	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
-
-		// Render to our framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
-		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper right
-		glBindVertexArray(vertex_array_id);
-
-		// Устанавливаем наш шейдер текущим
-		glUseProgram(program_id);
-
-		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
 
 		delta_time = float(glfwGetTime()) - last_time;
 		last_time = float(glfwGetTime());
@@ -247,7 +263,7 @@ int main() {
 		// Или, для ортокамеры
 		mat4 view = glm::lookAt(
 			position, // Камера находится в мировых координатах
-			position + forward, // И направлена в начало координат
+			position + forward,
 			up  // "Голова" находится сверху
 		);
 
@@ -260,16 +276,70 @@ int main() {
 		// Передать наши трансформации в текущий шейдер
 		// Это делается в основном цикле, поскольку каждая модель будет иметь другую MVP-матрицу (как минимум часть M)
 		vec3 light_color = vec3(1.0f, 1.0f, 1.0f);
-		vec3 light_position_worldspace = vec3(sin(glfwGetTime())*2.0f, -2.0f, cos(glfwGetTime())*2.0f);
+		vec3 light_position = vec3(sinf(glfwGetTime()), 2, cosf(glfwGetTime()));
+		vec3 light_direction_worldspace = normalize(-light_position);
+		//vec3 right_light = vec4(sinf(glfwGetTime() - pi<float>() / 2.0f), 0, cosf(glfwGetTime() - pi<float>() / 2.0f), 1);
+		//vec3 up_light = glm::cross(right_light, light_direction_worldspace);
 		float light_power = 3.0f;
 		mat3 mv3x3 = mat3(model * view);
+
+		glm::mat4 shadow_projection_matrix = glm::ortho<float>(-10, 10, -10, 10, -1, 4);
+		glm::mat4 shadow_view_matrix = glm::lookAt(light_position, glm::vec3(0, 0, 0), vec3(1, 0, 0));
+		glm::mat4 shadow_model_matrix = glm::mat4(1.0);
+		glm::mat4 shadow_mvp = shadow_projection_matrix * shadow_view_matrix * shadow_model_matrix;
+		const glm::mat4 bias_matrix(
+			0.5, 0.0, 0.0, 0.0,
+			0.0, 0.5, 0.0, 0.0,
+			0.0, 0.0, 0.5, 0.0,
+			0.5, 0.5, 0.5, 1.0
+		);
+		glm::mat4 depth_bias_mvp = shadow_mvp * bias_matrix;
+
+		// Render to our framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer_id);
+		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper righ
+		glBindVertexArray(vertex_array_id);
+
+		// Устанавливаем наш шейдер текущим
+		glUseProgram(shadow_map_program_id);
+		
+		// Send our transformation to the currently bound shader,
+		// in the "MVP" uniform
+		glUniformMatrix4fv(shadow_mvp_location, 1, GL_FALSE, &shadow_mvp[0][0]);
+
+		glClearColor(0.0f, 0.0f, 0.25f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		glVertexAttribPointer(
+			0,                  // Атрибут 0. Подробнее об этом будет рассказано в части, посвященной шейдерам.
+			3,                  // Размер
+			GL_FLOAT,           // Тип
+			GL_FALSE,           // Указывает, что значения не нормализованы
+			0,                  // Шаг
+			(void*)0            // Смещение массива в буфере
+		);
+		glDrawArrays(GL_TRIANGLES, 0, vertices.size()); // 12*3 индексов начинающихся с 0. -> 12 треугольников -> 6 граней.
+		glDisableVertexAttribArray(0);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
+		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper righ
+		glBindVertexArray(vertex_array_id);
+
+		// Устанавливаем наш шейдер текущим
+		glUseProgram(program_id);
+		
 		glUniformMatrix4fv(matrix_id, 1, GL_FALSE, &mvp[0][0]);
 		glUniformMatrix4fv(model_matrix_id, 1, GL_FALSE, &model[0][0]);
 		glUniformMatrix4fv(view_matrix_id, 1, GL_FALSE, &view[0][0]);
+		glUniformMatrix4fv(depth_bias_mvp_id, 1, GL_FALSE, &depth_bias_mvp[0][0]);
 		glUniformMatrix3fv(mv3x3_id, 1, GL_FALSE, &mv3x3[0][0]);
-		glUniform3f(light_position_worldspace_id, light_position_worldspace.x, light_position_worldspace.y, light_position_worldspace.z);
+		glUniform3f(light_position_worldspace_id, light_direction_worldspace.x, light_direction_worldspace.y, light_direction_worldspace.z);
 		glUniform3f(light_color_id, light_color.x, light_color.y, light_color.z);
 		glUniform1f(light_power_id, light_power);
+		glUniform1f(time_id, glfwGetTime());
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -282,6 +352,14 @@ int main() {
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, specular_id);
 		glUniform1i(specular_location, 2);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, shadow_texture);
+		glUniform1i(shadow_location, 3);
+
+		glClearColor(0.0f, 0.0f, 0.25f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
 		
 		// Указываем, что первым буфером атрибутов будут вершины
 		glEnableVertexAttribArray(0);
@@ -354,9 +432,6 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper right
 		
-		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		glBindVertexArray(quad_vertex_array_id);
 		glUseProgram(post_program_id);
 		glDisable(GL_DEPTH_TEST);
@@ -365,7 +440,14 @@ int main() {
 		glBindTexture(GL_TEXTURE_2D, rendered_texture);
 		glUniform1i(rendered_texture_location, 0);
 
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, shadow_texture);
+		glUniform1i(post_shadow_texture_location, 1);
+		
 		glUniform1f(post_time_location, glfwGetTime());
+
+		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, quad_vertex_buffer);

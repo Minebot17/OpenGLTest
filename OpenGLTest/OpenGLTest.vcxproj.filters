@@ -28,6 +28,12 @@
     <None Include="post_vertex.glsl">
       <Filter>Исходные файлы</Filter>
     </None>
+    <None Include="shadow_map_vertex.glsl">
+      <Filter>Исходные файлы</Filter>
+    </None>
+    <None Include="shadow_map_fragment.glsl">
+      <Filter>Исходные файлы</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

@@ -134,6 +134,8 @@
     <None Include="packages.config" />
     <None Include="post_fragment.glsl" />
     <None Include="post_vertex.glsl" />
+    <None Include="shadow_map_fragment.glsl" />
+    <None Include="shadow_map_vertex.glsl" />
     <None Include="vertex_standart.glsl" />
   </ItemGroup>
   <ItemGroup>
