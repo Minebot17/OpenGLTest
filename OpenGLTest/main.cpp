@@ -60,7 +60,7 @@ int main() {
 	GLuint shadow_texture;
 	glGenTextures(1, &shadow_texture);
 	glBindTexture(GL_TEXTURE_2D, shadow_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, 4096, 4096, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -208,7 +208,8 @@ int main() {
 	GLuint time_id = glGetUniformLocation(program_id, "time");
 
 	// Фрагмент будет выводиться только в том, случае, если он находится ближе к камере, чем предыдущий
-	glDepthFunc(GL_LESS); 
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
 
 	GLuint texture_id = load_bmp("space_ship.bmp");
 	GLuint normal_id = load_bmp("space_ship_normals.bmp");
@@ -276,15 +277,15 @@ int main() {
 		// Передать наши трансформации в текущий шейдер
 		// Это делается в основном цикле, поскольку каждая модель будет иметь другую MVP-матрицу (как минимум часть M)
 		vec3 light_color = vec3(1.0f, 1.0f, 1.0f);
-		vec3 light_position = vec3(sinf(glfwGetTime()), 2, cosf(glfwGetTime()));
+		vec3 light_position = vec3(sinf(glfwGetTime()) * 2.0f, 2, cosf(glfwGetTime()) * 2.0f);
 		vec3 light_direction_worldspace = normalize(-light_position);
 		//vec3 right_light = vec4(sinf(glfwGetTime() - pi<float>() / 2.0f), 0, cosf(glfwGetTime() - pi<float>() / 2.0f), 1);
 		//vec3 up_light = glm::cross(right_light, light_direction_worldspace);
-		float light_power = 3.0f;
+		float light_power = 2.0f;
 		mat3 mv3x3 = mat3(model * view);
 
-		glm::mat4 shadow_projection_matrix = glm::ortho<float>(-10, 10, -10, 10, -1, 4);
-		glm::mat4 shadow_view_matrix = glm::lookAt(light_position, glm::vec3(0, 0, 0), vec3(1, 0, 0));
+		glm::mat4 shadow_projection_matrix = glm::ortho<float>(-10, 10, -10, 10, -1,6);
+		glm::mat4 shadow_view_matrix = glm::lookAt(-light_position, glm::vec3(0, 0, 0), vec3(1, 0, 0));
 		glm::mat4 shadow_model_matrix = glm::mat4(1.0);
 		glm::mat4 shadow_mvp = shadow_projection_matrix * shadow_view_matrix * shadow_model_matrix;
 		const glm::mat4 bias_matrix(
@@ -293,11 +294,11 @@ int main() {
 			0.0, 0.0, 0.5, 0.0,
 			0.5, 0.5, 0.5, 1.0
 		);
-		glm::mat4 depth_bias_mvp = shadow_mvp * bias_matrix;
+		glm::mat4 depth_bias_mvp = bias_matrix * shadow_mvp;
 
 		// Render to our framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer_id);
-		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper righ
+		glViewport(0, 0, 4096, 4096); // Render on the whole framebuffer, complete from the lower left corner to the upper righ
 		glBindVertexArray(vertex_array_id);
 
 		// Устанавливаем наш шейдер текущим

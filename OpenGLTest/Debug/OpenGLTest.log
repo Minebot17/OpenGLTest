@@ -2,8 +2,8 @@
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\shared\minwindef.h(130,1): warning C4005: APIENTRY: изменение макроопределения
 C:\Users\serpi\Documents\CppProjects\OpenGLTest\packages\glfw.3.3.0.1\build\native\include\GLFW\glfw3.h(104): message : см. предыдущее определение "APIENTRY"
 C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(224,20): warning C4018: <: несоответствие типов со знаком и без знака
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(279,46): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(279,70): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(342,35): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(447,46): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
+C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(280,46): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
+C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(280,77): warning C4244: аргумент: преобразование "double" в "float", возможна потеря данных
+C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(343,35): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
+C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(448,46): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
   OpenGLTest.vcxproj -> C:\Users\serpi\Documents\CppProjects\OpenGLTest\Debug\OpenGLTest.exe
