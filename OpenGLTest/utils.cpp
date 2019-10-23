@@ -94,7 +94,7 @@ static GLuint load_shaders(const char* vertex_file_path, const char* fragment_fi
 	return ProgramID;
 }
 
-static GLuint load_bmp(const char* path) {
+static GLuint load_bmp(const char* path, bool sRGB) {
 	// Данные, прочитанные из заголовка BMP-файла
 	unsigned char header[54]; // Каждый BMP-файл начинается с заголовка, длиной в 54 байта
 	unsigned int dataPos;     // Смещение данных в файле (позиция данных)
@@ -147,7 +147,7 @@ static GLuint load_bmp(const char* path) {
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
 	// Передадим изображение OpenGL
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, sRGB ? GL_SRGB : GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
 
 	// Когда изображение увеличивается, то мы используем обычную линейную фильтрацию
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

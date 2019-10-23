@@ -7,6 +7,7 @@ out vec3 color;
 uniform sampler2D rendered_texture;
 uniform sampler2D shadow_texture;
 uniform float time;
+uniform float gamma;
 
 void main(){
 	if (gl_FragCoord.x < 200 && gl_FragCoord.y < 200){
@@ -15,6 +16,6 @@ void main(){
 		return;
 	}
 
-	vec3 texture_color = texture(rendered_texture, uv).rgb;
+	vec3 texture_color = pow(texture(rendered_texture, uv).rgb, vec3(gamma));
 	color = texture_color;
 }

@@ -151,6 +151,7 @@ int main() {
 	GLuint rendered_texture_location = glGetUniformLocation(post_program_id, "rendered_texture");
 	GLuint post_time_location = glGetUniformLocation(post_program_id, "time");
 	GLuint post_shadow_texture_location = glGetUniformLocation(post_program_id, "shadow_texture");
+	GLuint post_gamma_location = glGetUniformLocation(post_program_id, "gamma");
 	
 	// Создаем VAO
 	GLuint vertex_array_id;
@@ -211,9 +212,9 @@ int main() {
 	glDepthFunc(GL_LESS);
 	glEnable(GL_CULL_FACE);
 
-	GLuint texture_id = load_bmp("space_ship.bmp");
-	GLuint normal_id = load_bmp("space_ship_normals.bmp");
-	GLuint specular_id = load_bmp("space_ship_specular.bmp");
+	GLuint texture_id = load_bmp("space_ship.bmp", true);
+	GLuint normal_id = load_bmp("space_ship_normals.bmp", false);
+	GLuint specular_id = load_bmp("space_ship_specular.bmp", false);
 	GLuint texture_location = glGetUniformLocation(program_id, "textureSampler");
 	GLuint normal_location = glGetUniformLocation(program_id, "normalSampler");
 	GLuint specular_location = glGetUniformLocation(program_id, "specularSampler");
@@ -446,6 +447,7 @@ int main() {
 		glUniform1i(post_shadow_texture_location, 1);
 		
 		glUniform1f(post_time_location, glfwGetTime());
+		glUniform1f(post_gamma_location, 1.0f/2.2f);
 
 		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
