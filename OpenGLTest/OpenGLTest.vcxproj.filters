@@ -34,6 +34,12 @@
     <None Include="shadow_map_fragment.glsl">
       <Filter>Исходные файлы</Filter>
     </None>
+    <None Include="stencil_vertex.glsl">
+      <Filter>Исходные файлы</Filter>
+    </None>
+    <None Include="stencil_fragment.glsl">
+      <Filter>Исходные файлы</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

@@ -136,6 +136,8 @@
     <None Include="post_vertex.glsl" />
     <None Include="shadow_map_fragment.glsl" />
     <None Include="shadow_map_vertex.glsl" />
+    <None Include="stencil_fragment.glsl" />
+    <None Include="stencil_vertex.glsl" />
     <None Include="vertex_standart.glsl" />
   </ItemGroup>
   <ItemGroup>

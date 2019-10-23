@@ -190,9 +190,6 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, bitangent_buffer);
 	glBufferData(GL_ARRAY_BUFFER, bitangents.size() * sizeof(glm::vec3), &bitangents[0], GL_STATIC_DRAW);
 
-	// Включим режим отслеживания нажатия клавиш, для проверки ниже
-	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-
 	// Создать и откомпилировать нашу шейдерную программу
 	GLuint program_id = load_shaders("vertex_standart.glsl", "fragment_standart.glsl");
 
@@ -207,9 +204,8 @@ int main() {
 	GLuint depth_bias_mvp_id = glGetUniformLocation(program_id, "depthBiasMVP");
 	GLuint time_id = glGetUniformLocation(program_id, "time");
 
-	// Фрагмент будет выводиться только в том, случае, если он находится ближе к камере, чем предыдущий
-	glDepthFunc(GL_LESS);
-	glEnable(GL_CULL_FACE);
+	GLuint stencil_id = load_shaders("stencil_vertex.glsl", "stencil_fragment.glsl");
+	GLuint stencil_mvp_location = glGetUniformLocation(stencil_id, "mvp");
 
 	GLuint texture_id = load_bmp("space_ship.bmp");
 	GLuint normal_id = load_bmp("space_ship_normals.bmp");
@@ -218,6 +214,15 @@ int main() {
 	GLuint normal_location = glGetUniformLocation(program_id, "normalSampler");
 	GLuint specular_location = glGetUniformLocation(program_id, "specularSampler");
 	GLuint shadow_location = glGetUniformLocation(program_id, "shadowSampler");
+
+	// Включим режим отслеживания нажатия клавиш, для проверки ниже
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glStencilMask(0x00);
 	
 	float delta_time = 0;
 	float last_time = 0;
@@ -309,7 +314,7 @@ int main() {
 		glUniformMatrix4fv(shadow_mvp_location, 1, GL_FALSE, &shadow_mvp[0][0]);
 
 		glClearColor(0.0f, 0.0f, 0.25f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 
 		glEnableVertexAttribArray(0);
@@ -325,7 +330,7 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, vertices.size()); // 12*3 индексов начинающихся с 0. -> 12 треугольников -> 6 граней.
 		glDisableVertexAttribArray(0);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper righ
 		glBindVertexArray(vertex_array_id);
 
@@ -359,8 +364,12 @@ int main() {
 		glUniform1i(shadow_location, 3);
 
 		glClearColor(0.0f, 0.0f, 0.25f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // каждый фрагмент обновит трафаретный буфер
+		glStencilMask(0xFF); // включить запись в трафаретный буфер
+		//glClearStencil(0X0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		
 		// Указываем, что первым буфером атрибутов будут вершины
 		glEnableVertexAttribArray(0);
@@ -429,8 +438,32 @@ int main() {
 		glDisableVertexAttribArray(3);
 		glDisableVertexAttribArray(4);
 
+		mat4 stencil_model = glm::scale(mat4(1.0f), vec3(1.2f, 1.2f, 1.2f));
+		mat4 stencil_mvp = projection * view * stencil_model;
+		glUseProgram(stencil_id);
+		glUniformMatrix4fv(stencil_mvp_location, 1, GL_FALSE, &stencil_mvp[0][0]);
+		glStencilFunc(GL_EQUAL, 0, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glStencilMask(0x00); // отключить запись в трафаретный буфер
+		glDisable(GL_DEPTH_TEST);
+
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		glVertexAttribPointer(
+			0,                  // Атрибут 0. Подробнее об этом будет рассказано в части, посвященной шейдерам.
+			3,                  // Размер
+			GL_FLOAT,           // Тип
+			GL_FALSE,           // Указывает, что значения не нормализованы
+			0,                  // Шаг
+			(void*)0            // Смещение массива в буфере
+		);
+		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+		glDisableVertexAttribArray(0);
+		glStencilFunc(GL_ALWAYS, 1, 1);
+		glEnable(GL_DEPTH_TEST);
+		
 		// Render to the screen
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		/*glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper right
 		
 		glBindVertexArray(quad_vertex_array_id);
@@ -448,7 +481,7 @@ int main() {
 		glUniform1f(post_time_location, glfwGetTime());
 
 		glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, quad_vertex_buffer);
@@ -477,7 +510,7 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(1);*/
 
 		// Сбрасываем буферы
 		glfwSwapBuffers(window);
