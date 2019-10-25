@@ -34,6 +34,12 @@
     <None Include="shadow_map_fragment.glsl">
       <Filter>Исходные файлы</Filter>
     </None>
+    <None Include="sky_vertex.glsl">
+      <Filter>Исходные файлы</Filter>
+    </None>
+    <None Include="sky_fragment.glsl">
+      <Filter>Исходные файлы</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -47,13 +53,31 @@
     <Image Include="test.bmp">
       <Filter>Исходные файлы</Filter>
     </Image>
-    <Image Include="space_ship.bmp">
+    <Image Include="sky_pos_x.bmp">
       <Filter>Исходные файлы</Filter>
     </Image>
-    <Image Include="space_ship_normals.bmp">
+    <Image Include="sky_pos_y.bmp">
       <Filter>Исходные файлы</Filter>
     </Image>
-    <Image Include="space_ship_specular.bmp">
+    <Image Include="sky_pos_z.bmp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
+    <Image Include="sky_neg_x.bmp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
+    <Image Include="sky_neg_y.bmp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
+    <Image Include="sky_neg_z.bmp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
+    <Image Include="gun_normal.bmp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
+    <Image Include="gun_specular.bmp">
+      <Filter>Исходные файлы</Filter>
+    </Image>
+    <Image Include="gun_color.bmp">
       <Filter>Исходные файлы</Filter>
     </Image>
   </ItemGroup>

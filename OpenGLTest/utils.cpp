@@ -257,3 +257,72 @@ static void compute_tangent_basis (
 		bitangents.push_back(bitangent);
 	}
 }
+
+static unsigned int load_cubemap(vector<std::string> faces) {
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		// Данные, прочитанные из заголовка BMP-файла
+		unsigned char header[54]; // Каждый BMP-файл начинается с заголовка, длиной в 54 байта
+		unsigned int dataPos;     // Смещение данных в файле (позиция данных)
+		unsigned int width, height;
+		unsigned int imageSize;   // Размер изображения = Ширина * Высота * 3
+		// RGB-данные, полученные из файла
+		unsigned char* data;
+
+		FILE* file;
+		fopen_s(&file, faces[i].c_str(), "rb");
+		if (!file) {
+			printf("Изображение не может быть открыто\n");
+			return 0;
+		}
+
+		if (fread(header, 1, 54, file) != 54) { // Если мы прочитали меньше 54 байт, значит возникла проблема
+			printf("Некорректный BMP-файлn");
+			return false;
+		}
+
+		if (header[0] != 'B' || header[1] != 'M') {
+			printf("Некорректный BMP-файлn");
+			return 0;
+		}
+
+		// Читаем необходимые данные
+		dataPos = *(int*) & (header[0x0A]); // Смещение данных изображения в файле
+		imageSize = *(int*) & (header[0x22]); // Размер изображения в байтах
+		width = *(int*) & (header[0x12]); // Ширина
+		height = *(int*) & (header[0x16]); // Высота
+
+		// Некоторые BMP-файлы имеют нулевые поля imageSize и dataPos, поэтому исправим их
+		if (imageSize == 0)    imageSize = width * height * 3; // Ширину * Высоту * 3, где 3 - 3 компоненты цвета (RGB)
+		if (dataPos == 0)      dataPos = 54; // В таком случае, данные будут следовать сразу за заголовком
+
+		// Создаем буфер
+		data = new unsigned char[imageSize];
+
+		// Считываем данные из файла в буфер
+		fread(data, 1, imageSize, file);
+
+		// Закрываем файл, так как больше он нам не нужен
+		fclose(file);
+		
+		if (data) {
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, GL_SRGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data
+			);
+		}
+		else
+			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
+}

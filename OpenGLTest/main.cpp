@@ -32,7 +32,7 @@ int main() {
 
 	// Открыть окно и создать в нем контекст OpenGL
 	GLFWwindow* window; // (В сопроводительном исходном коде эта переменная является глобальной)
-	window = glfwCreateWindow(800, 600, "Test", nullptr, nullptr);
+	window = glfwCreateWindow(1600, 1200, "Test", nullptr, nullptr);
 	if (window == nullptr) {
 		fprintf(stderr, "Невозможно открыть окно GLFW. Если у вас Intel GPU, то он не поддерживает версию 3.3. Попробуйте версию уроков для OpenGL 2.1.n");
 		glfwTerminate();
@@ -49,8 +49,8 @@ int main() {
 
 	int w, h;
 	glfwGetWindowSize(window, &w, &h);
-	glfwSetCursorPos(window, float(w) / 2.0f, float(h) / 2.0f);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	//glfwSetCursorPos(window, float(w) / 2.0f, float(h) / 2.0f);
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 	GLuint shadow_framebuffer_id = 0;
 	glGenFramebuffers(1, &shadow_framebuffer_id);
@@ -152,6 +152,34 @@ int main() {
 	GLuint post_time_location = glGetUniformLocation(post_program_id, "time");
 	GLuint post_shadow_texture_location = glGetUniformLocation(post_program_id, "shadow_texture");
 	GLuint post_gamma_location = glGetUniformLocation(post_program_id, "gamma");
+
+	vector<vec3> sky_one_vertices = {
+		vec3(-1,-1,-1),
+		vec3(1,-1,-1),
+		vec3(1,1,-1),
+		vec3(-1,1,-1),
+		vec3(-1,-1,1),
+		vec3(1,-1,1),
+		vec3(1,1,1),
+		vec3(-1,1,1),
+	};
+	vector<int> sky_indexes = { 2,3,0,0,1,2,2,1,6,1,5,6,4,3,7,4,0,3,4,7,6,6,5,4,3,2,6,7,3,6,5,1,0,4,5,0 };
+	vector<vec3> sky_vertices;
+	for (int i = 0; i < sky_indexes.size(); i++)
+		sky_vertices.push_back(sky_one_vertices[sky_indexes[i]]);
+	
+	GLuint sky_vao;
+	glGenVertexArrays(1, &sky_vao);
+	glBindVertexArray(sky_vao);
+
+	GLuint sky_shader_id = load_shaders("sky_vertex.glsl", "sky_fragment.glsl");
+	GLuint sky_mvp_location = glGetUniformLocation(sky_shader_id, "mvp");
+	GLuint sky_cubemap_location = glGetUniformLocation(sky_shader_id, "skybox");
+
+	GLuint sky_vertex_buffer;
+	glGenBuffers(1, &sky_vertex_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, sky_vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sky_vertices.size() * sizeof(glm::vec3), &sky_vertices[0], GL_STATIC_DRAW);
 	
 	// Создаем VAO
 	GLuint vertex_array_id;
@@ -208,17 +236,28 @@ int main() {
 	GLuint depth_bias_mvp_id = glGetUniformLocation(program_id, "depthBiasMVP");
 	GLuint time_id = glGetUniformLocation(program_id, "time");
 
+	GLuint texture_location = glGetUniformLocation(program_id, "textureSampler");
+	GLuint normal_location = glGetUniformLocation(program_id, "normalSampler");
+	GLuint specular_location = glGetUniformLocation(program_id, "specularSampler");
+	GLuint shadow_location = glGetUniformLocation(program_id, "shadowSampler");
+
 	// Фрагмент будет выводиться только в том, случае, если он находится ближе к камере, чем предыдущий
-	glDepthFunc(GL_LESS);
+	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 
 	GLuint texture_id = load_bmp("space_ship.bmp", true);
 	GLuint normal_id = load_bmp("space_ship_normals.bmp", false);
 	GLuint specular_id = load_bmp("space_ship_specular.bmp", false);
-	GLuint texture_location = glGetUniformLocation(program_id, "textureSampler");
-	GLuint normal_location = glGetUniformLocation(program_id, "normalSampler");
-	GLuint specular_location = glGetUniformLocation(program_id, "specularSampler");
-	GLuint shadow_location = glGetUniformLocation(program_id, "shadowSampler");
+
+	vector<std::string> faces {
+		"sky_neg_x.bmp",
+		"sky_pos_x.bmp",
+		"sky_pos_y.bmp",
+		"sky_neg_y.bmp",
+		"sky_pos_z.bmp",
+		"sky_neg_z.bmp"
+	};
+	unsigned int cubemap_texture = load_cubemap(faces);
 	
 	float delta_time = 0;
 	float last_time = 0;
@@ -236,24 +275,24 @@ int main() {
 		double dx, dy;
 		glfwGetWindowSize(window, &w, &h);
 		glfwGetCursorPos(window, &dx, &dy);
-		glfwSetCursorPos(window, float(w)/2.0f, float(h)/2.0f);
+		//glfwSetCursorPos(window, float(w)/2.0f, float(h)/2.0f);
 		dx -= float(w) / 2.0f;
 		dy -= float(h) / 2.0f;
-		x_angle += float(-dx) * delta_time * mouse_speed;
-		y_angle += float(dy) * delta_time * mouse_speed;
+		x_angle += float(dx) * delta_time * mouse_speed;
+		y_angle += float(-dy) * delta_time * mouse_speed;
 
-		vec3 right = vec4(cosf(x_angle - pi<float>()/2.0f), 0, sinf(x_angle - pi<float>() / 2.0f), 1);
+		vec3 left = vec4(cosf(x_angle - pi<float>()/2.0f), 0, sinf(x_angle - pi<float>() / 2.0f), 1);
 		vec3 forward = glm::rotate(mat4(1.0f), y_angle, vec3(0, 0, 1)) * vec4(1, 0, 0, 0) * glm::rotate(mat4(1.0f), x_angle, vec3(0, 1, 0));
-		vec3 up = glm::cross(right, forward);
+		vec3 up = glm::cross(forward, left);
 		
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 			position += fly_speed * forward * delta_time;
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 			position += fly_speed * -forward * delta_time;
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-			position += fly_speed * -right * delta_time;
+			position += fly_speed * left * delta_time;
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-			position += fly_speed * right * delta_time;
+			position += fly_speed * -left * delta_time;
 		if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
 			position += fly_speed * -up * delta_time;
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
@@ -264,13 +303,13 @@ int main() {
 
 		// Или, для ортокамеры
 		mat4 view = glm::lookAt(
-			position, // Камера находится в мировых координатах
-			position + forward,
-			up  // "Голова" находится сверху
+			vec3(rotate(mat4(1.0f), float(glfwGetTime() / 4.0f), vec3(0.25f, 1, 0)) * vec4(0, 4, 2, 0)), // Камера находится в мировых координатах
+			vec3(rotate(mat4(1.0f), float(glfwGetTime() / 4.0f), vec3(0.25f, 1, 0)) * vec4(0, 0, -2, 0)),
+			vec3(rotate(mat4(1.0f), float(glfwGetTime() / 4.0f), vec3(0.25f, 1, 0)) * vec4(0, 0.5f, -0.5f, 0))  // "Голова" находится сверху
 		);
 
 		// Матрица модели : единичная матрица (Модель находится в начале координат)
-		mat4 model = mat4(1.0f);  // Индивидуально для каждой модели
+		mat4 model = glm::rotate(mat4(1.0f), float(glfwGetTime() / 4.0f), vec3(0.25f, 1, 0)) * glm::translate(mat4(1.0f), vec3(0, 0, -2));  // Индивидуально для каждой модели
 
 		// Итоговая матрица ModelViewProjection, которая является результатом перемножения наших трех матриц
 		mat4 mvp = projection * view * model; // Помните, что умножение матрицы производиться в обратном порядке
@@ -278,16 +317,16 @@ int main() {
 		// Передать наши трансформации в текущий шейдер
 		// Это делается в основном цикле, поскольку каждая модель будет иметь другую MVP-матрицу (как минимум часть M)
 		vec3 light_color = vec3(1.0f, 1.0f, 1.0f);
-		vec3 light_position = vec3(sinf(glfwGetTime()) * 2.0f, 2, cosf(glfwGetTime()) * 2.0f);
-		vec3 light_direction_worldspace = normalize(-light_position);
+		vec3 light_position = vec3(0.454f, 0.536f, 0.712f);
+		vec3 light_direction_worldspace = normalize(light_position);
 		//vec3 right_light = vec4(sinf(glfwGetTime() - pi<float>() / 2.0f), 0, cosf(glfwGetTime() - pi<float>() / 2.0f), 1);
 		//vec3 up_light = glm::cross(right_light, light_direction_worldspace);
 		float light_power = 2.0f;
 		mat3 mv3x3 = mat3(model * view);
 
-		glm::mat4 shadow_projection_matrix = glm::ortho<float>(-10, 10, -10, 10, -1,6);
-		glm::mat4 shadow_view_matrix = glm::lookAt(-light_position, glm::vec3(0, 0, 0), vec3(1, 0, 0));
-		glm::mat4 shadow_model_matrix = glm::mat4(1.0);
+		glm::mat4 shadow_projection_matrix = glm::ortho<float>(-10, 10, -10, 10, -5,8);
+		glm::mat4 shadow_view_matrix = glm::lookAt(light_position, glm::vec3(0, 0, 0), vec3(0, 1, 0));
+		glm::mat4 shadow_model_matrix = model;
 		glm::mat4 shadow_mvp = shadow_projection_matrix * shadow_view_matrix * shadow_model_matrix;
 		const glm::mat4 bias_matrix(
 			0.5, 0.0, 0.0, 0.0,
@@ -429,6 +468,32 @@ int main() {
 		glDisableVertexAttribArray(2);
 		glDisableVertexAttribArray(3);
 		glDisableVertexAttribArray(4);
+
+		mat4 sky_view = mat4(mat3(view));
+		mat4 sky_mvp = projection * sky_view;
+		glDepthMask(GL_FALSE);
+		
+		glBindVertexArray(sky_vao);
+		glUseProgram(sky_shader_id);
+		glUniformMatrix4fv(sky_mvp_location, 1, GL_FALSE, &sky_mvp[0][0]);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cubemap_texture);
+		glUniform1i(sky_cubemap_location, 0);
+
+		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, sky_vertex_buffer);
+		glVertexAttribPointer(
+			0,                  // Атрибут 0. Подробнее об этом будет рассказано в части, посвященной шейдерам.
+			3,                  // Размер
+			GL_FLOAT,           // Тип
+			GL_FALSE,           // Указывает, что значения не нормализованы
+			0,                  // Шаг
+			(void*)0            // Смещение массива в буфере
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDisableVertexAttribArray(0);
+		glDepthMask(GL_TRUE);
 
 		// Render to the screen
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
