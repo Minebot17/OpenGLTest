@@ -1,15 +1,17 @@
 #version 330 core
 layout(location = 0) out vec3 color;
 
-in vec3 fragmentColor;
-in vec2 uv;
-in vec3 normal_cameraspace;
-in vec3 lightDirection_cameraspace;
-in vec3 eyeDirection_cameraspace;
-in vec3 lightDirection_tangentspace;
-in vec3 eyeDirection_tangentspace;
-in mat3 tbn;
-in vec4 shadowCoord;
+in GS_OUT {
+	vec3 fragmentColor;
+	vec2 uv;
+	vec3 normal_cameraspace;
+	vec3 lightDirection_cameraspace;
+	vec3 eyeDirection_cameraspace;
+	vec3 lightDirection_tangentspace;
+	vec3 eyeDirection_tangentspace;
+	mat3 tbn;
+	vec4 shadowCoord;
+} fs_in;
 
 uniform sampler2D textureSampler;
 uniform sampler2D normalSampler;
@@ -20,9 +22,9 @@ uniform float lightPower;
 uniform float time;
 
 void main(){
-	vec3 n = normalize(texture(normalSampler, uv).rgb*2.0 - 1.0);
-	vec3 l = normalize(lightDirection_tangentspace);
-	vec3 e = normalize(eyeDirection_tangentspace);
+	vec3 n = normalize(texture(normalSampler, fs_in.uv).rgb*2.0 - 1.0);
+	vec3 l = normalize(fs_in.lightDirection_tangentspace);
+	vec3 e = normalize(fs_in.eyeDirection_tangentspace);
 	vec3 r = reflect(-l, n);
 
 	float cosAlpha = clamp(dot(e, r), 0, 1);
@@ -40,15 +42,16 @@ void main(){
 	float visibility = 1.0;
 
 	for (int i=0;i<4;i++)
-		if (texture(shadowSampler, shadowCoord.xy + poissonDisk[i]/1000.0).r < shadowCoord.z-bias-0.005)
+		if (texture(shadowSampler, fs_in.shadowCoord.xy + poissonDisk[i]/1000.0).r < fs_in.shadowCoord.z-bias-0.005)
 			visibility-=0.25;
 
-	vec3 materialColor = texture(textureSampler, uv).rgb;
-	vec3 specularColor = texture(specularSampler, uv).rgb;
+	vec3 materialColor = texture(textureSampler, fs_in.uv).rgb;
+	vec3 specularColor = texture(specularSampler, fs_in.uv).rgb;
 	color = vec3(0.025, 0.025, 0.025) * materialColor + // ambient
 			materialColor * lightColor * lightPower * visibility * cosTheta + // diffuse
 			specularColor * lightColor * lightPower * visibility * pow(cosAlpha, 5); // specular
 
 	//float a = texture(shadowSampler, shadowCoord.xy).r;
 	//color = vec3(a, a, a);
+	//color = vec3(1., 0., 0.);
 }

@@ -223,7 +223,7 @@ int main() {
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 
 	// Создать и откомпилировать нашу шейдерную программу
-	GLuint program_id = load_shaders("vertex_standart.glsl", "fragment_standart.glsl");
+	GLuint program_id = load_shaders("vertex_standart.glsl", "fragment_standart.glsl", "geometry_standart.glsl");
 
 	// Получить хэндл переменной в шейдере
 	GLuint matrix_id = glGetUniformLocation(program_id, "mvp");

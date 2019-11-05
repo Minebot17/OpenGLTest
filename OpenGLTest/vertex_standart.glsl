@@ -12,40 +12,42 @@ uniform mat3 mv3x3;
 uniform vec3 lightDirection_worldspace;
 uniform mat4 depthBiasMVP;
 
-out vec3 fragmentColor;
-out vec2 uv;
-out vec3 normal_cameraspace;
-out vec3 lightDirection_cameraspace;
-out vec3 eyeDirection_cameraspace;
-out vec3 lightDirection_tangentspace;
-out vec3 eyeDirection_tangentspace;
-out mat3 tbn;
-out vec4 shadowCoord;
+out VS_OUT {
+	vec3 fragmentColor;
+	vec2 uv;
+	vec3 normal_cameraspace;
+	vec3 lightDirection_cameraspace;
+	vec3 eyeDirection_cameraspace;
+	vec3 lightDirection_tangentspace;
+	vec3 eyeDirection_tangentspace;
+	mat3 tbn;
+	vec4 shadowCoord;
+} vs_out;
 
 void main(){
-	uv = vertexUV;
+	vs_out.uv = vertexUV;
 	gl_Position = mvp * vec4(vertexPosition_modelspace, 1);
 
 	// Vector that goes from the vertex to the camera, in camera space.
 	vec3 vertexPosition_cameraspace = (view * model * vec4(vertexPosition_modelspace, 1)).xyz;
-	lightDirection_cameraspace = (view * vec4(lightDirection_worldspace, 0)).xyz;
+	vs_out.lightDirection_cameraspace = (view * vec4(lightDirection_worldspace, 0)).xyz;
 
-	eyeDirection_cameraspace = -vertexPosition_cameraspace;
+	vs_out.eyeDirection_cameraspace = -vertexPosition_cameraspace;
 
 	// Normal of the the vertex, in camera space
-	normal_cameraspace = (view * model * vec4(vertexNormal, 0)).xyz; // Only correct if ModelMatrix does not scale the model ! Use its inverse transpose if not
+	vs_out.normal_cameraspace = (view * model * vec4(vertexNormal, 0)).xyz; // Only correct if ModelMatrix does not scale the model ! Use its inverse transpose if not
 
 	vec3 vertexNormal_cameraspace = mv3x3 * normalize(vertexNormal);
     vec3 vertexTangent_cameraspace = mv3x3 * normalize(vertexTangent);
     vec3 vertexBitangent_cameraspace = mv3x3 * normalize(vertexBitangent);
 
-	tbn = transpose(mat3(
+	vs_out.tbn = transpose(mat3(
         vertexTangent_cameraspace,
         vertexBitangent_cameraspace,
         vertexNormal_cameraspace
     )); // You can use dot products instead of building this matrix and transposing it. See References for details.
 
-	lightDirection_tangentspace = tbn * lightDirection_cameraspace;
-    eyeDirection_tangentspace =  tbn * eyeDirection_cameraspace;
-	shadowCoord = depthBiasMVP * vec4(vertexPosition_modelspace,1);
+	vs_out.lightDirection_tangentspace = vs_out.tbn * vs_out.lightDirection_cameraspace;
+    vs_out.eyeDirection_tangentspace =  vs_out.tbn * vs_out.eyeDirection_cameraspace;
+	vs_out.shadowCoord = depthBiasMVP * vec4(vertexPosition_modelspace,1);
 }

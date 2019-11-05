@@ -40,6 +40,9 @@
     <None Include="sky_fragment.glsl">
       <Filter>Исходные файлы</Filter>
     </None>
+    <None Include="geometry_standart.glsl">
+      <Filter>Исходные файлы</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

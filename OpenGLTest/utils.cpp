@@ -12,11 +12,14 @@
 using std::vector;
 using namespace glm;
 
-static GLuint load_shaders(const char* vertex_file_path, const char* fragment_file_path) {
+static GLuint load_shaders(const char* vertex_file_path, const char* fragment_file_path, const char* geometry_file_path) {
 
 	// Создаем шейдеры
 	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint GeometryShaderID = -1;
+	if (geometry_file_path != nullptr)
+		GeometryShaderID = glCreateShader(GL_GEOMETRY_SHADER);
 
 	// Загружаем код Вершинного Шейдера из файла
 	std::string VertexShaderCode;
@@ -37,6 +40,18 @@ static GLuint load_shaders(const char* vertex_file_path, const char* fragment_fi
 		sstr << FragmentShaderStream.rdbuf();
 		FragmentShaderCode = sstr.str();
 		FragmentShaderStream.close();
+	}
+
+	std::string GeometryShaderCode;
+	if (geometry_file_path != nullptr) {
+		// Загружаем код Геометрического шейдера из файла
+		std::ifstream GeometryShaderStream(geometry_file_path, std::ios::in);
+		if (GeometryShaderStream.is_open()) {
+			std::stringstream sstr;
+			sstr << GeometryShaderStream.rdbuf();
+			GeometryShaderCode = sstr.str();
+			GeometryShaderStream.close();
+		}
 	}
 
 	GLint Result = GL_FALSE;
@@ -72,11 +87,30 @@ static GLuint load_shaders(const char* vertex_file_path, const char* fragment_fi
 		fprintf(stdout, "%s\n", &FragmentShaderErrorMessage[0]);
 	}
 
+	if (geometry_file_path != nullptr) {
+		// Компилируем Геометрический шейдер
+		printf("Компиляция шейдера: %s\n", geometry_file_path);
+		char const* GeometrySourcePointer = GeometryShaderCode.c_str();
+		glShaderSource(GeometryShaderID, 1, &GeometrySourcePointer, NULL);
+		glCompileShader(GeometryShaderID);
+
+		// Проверяем Геометрический шейдер
+		glGetShaderiv(GeometryShaderID, GL_COMPILE_STATUS, &Result);
+		glGetShaderiv(GeometryShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+		if (InfoLogLength > 0) {
+			std::vector<char> GeometryShaderErrorMessage(InfoLogLength + 1);
+			glGetShaderInfoLog(GeometryShaderID, InfoLogLength, NULL, &GeometryShaderErrorMessage[0]);
+			fprintf(stdout, "%s\n", &GeometryShaderErrorMessage[0]);
+		}
+	}
+
 	// Создаем шейдерную программу и привязываем шейдеры к ней
 	fprintf(stdout, "Создаем шейдерную программу и привязываем шейдеры к ней\n");
 	GLuint ProgramID = glCreateProgram();
 	glAttachShader(ProgramID, VertexShaderID);
 	glAttachShader(ProgramID, FragmentShaderID);
+	if (geometry_file_path != nullptr)
+		glAttachShader(ProgramID, GeometryShaderID);
 	glLinkProgram(ProgramID);
 
 	// Проверяем шейдерную программу
@@ -90,8 +124,14 @@ static GLuint load_shaders(const char* vertex_file_path, const char* fragment_fi
 
 	glDeleteShader(VertexShaderID);
 	glDeleteShader(FragmentShaderID);
+	if (geometry_file_path != nullptr)
+		glDeleteShader(GeometryShaderID);
 
 	return ProgramID;
+}
+
+static GLuint load_shaders(const char* vertex_file_path, const char* fragment_file_path) {
+	return load_shaders(vertex_file_path, fragment_file_path, nullptr);
 }
 
 static GLuint load_bmp(const char* path, bool sRGB) {

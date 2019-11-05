@@ -131,6 +131,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="fragment_standart.glsl" />
+    <None Include="geometry_standart.glsl" />
     <None Include="packages.config" />
     <None Include="post_fragment.glsl" />
     <None Include="post_vertex.glsl" />
