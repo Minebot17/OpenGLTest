@@ -153,6 +153,44 @@ int main() {
 	GLuint post_shadow_texture_location = glGetUniformLocation(post_program_id, "shadow_texture");
 	GLuint post_gamma_location = glGetUniformLocation(post_program_id, "gamma");
 
+	// The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
+	int msaa_samples = 8;
+	GLuint msaa_framebuffer_id = 0;
+	glGenFramebuffers(1, &msaa_framebuffer_id);
+	glBindFramebuffer(GL_FRAMEBUFFER, msaa_framebuffer_id);
+
+	// The texture we're going to render to
+	GLuint msaa_rendered_texture;
+	glGenTextures(1, &msaa_rendered_texture);
+
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msaa_rendered_texture);
+
+	// Give an empty image to OpenGL
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, msaa_samples, GL_RGB, w, h, GL_TRUE);
+
+	// Poor filtering. Needed !
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	// The depth buffer
+	GLuint msaa_depth_renderbuffer;
+	glGenRenderbuffers(1, &msaa_depth_renderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, msaa_depth_renderbuffer);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, msaa_samples, GL_DEPTH_COMPONENT, w, h);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, msaa_depth_renderbuffer);
+
+	// Set "renderedTexture" as our colour attachement #0
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, msaa_rendered_texture, 0);
+
+	// Set the list of draw buffers.
+	GLenum msaa_DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, msaa_DrawBuffers); // "1" is the size of DrawBuffers
+
+	// Always check that our framebuffer is ok
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		printf("Framebuffer isn't ok");
+
 	vector<vec3> sky_one_vertices = {
 		vec3(-1,-1,-1),
 		vec3(1,-1,-1),
@@ -365,7 +403,7 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, vertices.size()); // 12*3 индексов начинающихся с 0. -> 12 треугольников -> 6 граней.
 		glDisableVertexAttribArray(0);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_id);
+		glBindFramebuffer(GL_FRAMEBUFFER, msaa_framebuffer_id);
 		glViewport(0, 0, w, h); // Render on the whole framebuffer, complete from the lower left corner to the upper righ
 		glBindVertexArray(vertex_array_id);
 
@@ -494,6 +532,10 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDisableVertexAttribArray(0);
 		glDepthMask(GL_TRUE);
+
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, msaa_framebuffer_id);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer_id);
+		glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 		// Render to the screen
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);

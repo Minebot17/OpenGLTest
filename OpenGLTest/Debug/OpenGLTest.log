@@ -5,13 +5,7 @@ C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(264,20): wa
 C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(306,13): warning C4101: height: неиспользованная локальная переменная
 C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(306,21): warning C4101: nrChannels: неиспользованная локальная переменная
 C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(306,6): warning C4101: width: неиспользованная локальная переменная
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(168,20): warning C4018: <: несоответствие типов со знаком и без знака
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(383,35): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
-  utils.cpp
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(514,46): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(264,20): warning C4018: <: несоответствие типов со знаком и без знака
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(306,13): warning C4101: height: неиспользованная локальная переменная
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(306,21): warning C4101: nrChannels: неиспользованная локальная переменная
-  Создание кода...
-C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\utils.cpp(306,6): warning C4101: width: неиспользованная локальная переменная
+C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(206,20): warning C4018: <: несоответствие типов со знаком и без знака
+C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(421,35): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
+C:\Users\serpi\Documents\CppProjects\OpenGLTest\OpenGLTest\main.cpp(556,46): warning C4244: аргумент: преобразование "double" в "GLfloat", возможна потеря данных
   OpenGLTest.vcxproj -> C:\Users\serpi\Documents\CppProjects\OpenGLTest\Debug\OpenGLTest.exe
